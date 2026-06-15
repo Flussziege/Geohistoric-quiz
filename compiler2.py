@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 # ==================================================
@@ -371,5 +372,106 @@ def draw_person_map(land, row):
                     pad=2,
                 ),
             )
+
+    return fig, person_name
+
+
+def draw_person_map_plotly(row, show_title=False):
+    """
+    Interaktive Karte für Streamlit/Plotly.
+    Marker und Text bleiben beim Zoomen gleich groß.
+    """
+    map_view = row["map_view"]
+    xmin, xmax, ymin, ymax = get_map_bounds(map_view)
+
+    person_name = row["display_name"]
+
+    fig = go.Figure()
+
+    # Geburt = grün
+    if pd.notna(row["birth_lat"]) and pd.notna(row["birth_lon"]):
+        birth_text = ""
+        if pd.notna(row["birth_year"]):
+            birth_text = str(int(row["birth_year"]))
+
+        fig.add_trace(
+            go.Scattergeo(
+                lon=[row["birth_lon"]],
+                lat=[row["birth_lat"]],
+                mode="markers+text",
+                marker=dict(
+                    size=14,
+                    color="green",
+                    symbol="circle",
+                ),
+                text=[birth_text],
+                textposition="top right",
+                textfont=dict(
+                    size=18,
+                    color="green",
+                    family="Arial Black",
+                ),
+                name="Geburt",
+                hoverinfo="skip",
+            )
+        )
+
+    # Tod = rot
+    if pd.notna(row["death_lat"]) and pd.notna(row["death_lon"]):
+        death_text = ""
+        if pd.notna(row["death_year"]):
+            death_text = str(int(row["death_year"]))
+
+        fig.add_trace(
+            go.Scattergeo(
+                lon=[row["death_lon"]],
+                lat=[row["death_lat"]],
+                mode="markers+text",
+                marker=dict(
+                    size=16,
+                    color="red",
+                    symbol="x",
+                    line=dict(width=3),
+                ),
+                text=[death_text],
+                textposition="bottom right",
+                textfont=dict(
+                    size=18,
+                    color="red",
+                    family="Arial Black",
+                ),
+                name="Tod",
+                hoverinfo="skip",
+            )
+        )
+
+    title = person_name if show_title else ""
+
+    fig.update_layout(
+        title=title,
+        height=650,
+        margin=dict(l=0, r=0, t=40, b=0),
+        showlegend=False,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        dragmode="pan",
+    )
+
+    fig.update_geos(
+        projection_type="mercator",
+        lonaxis_range=[xmin, xmax],
+        lataxis_range=[ymin, ymax],
+        showland=True,
+        landcolor="whitesmoke",
+        showocean=True,
+        oceancolor="white",
+        showcountries=False,
+        showcoastlines=True,
+        coastlinecolor="black",
+        coastlinewidth=1,
+        showframe=False,
+        showgrid=False,
+        bgcolor="white",
+    )
 
     return fig, person_name

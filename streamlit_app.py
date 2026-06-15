@@ -1,13 +1,13 @@
 import random
+import unicodedata
 
 import streamlit as st
-import matplotlib.pyplot as plt
 
-import compiler2
+import compiler
 
 
 # ==================================================
-# Streamlit-Grundeinstellungen
+# Einstellungen
 # ==================================================
 
 st.set_page_config(
@@ -17,51 +17,64 @@ st.set_page_config(
 
 
 # ==================================================
-# Daten laden
+# Hilfsfunktionen
 # ==================================================
 
 @st.cache_data(show_spinner="Lade Wikidata-Daten...")
 def load_game_data():
-    input_df = compiler2.load_input_file(compiler2.INPUT_FILE)
+    return compiler.prepare_game_data()
 
-    qids = input_df["qid"].tolist()
-    wikidata_df = compiler2.query_wikidata(qids)
 
-    if wikidata_df.empty:
-        raise ValueError("Keine Daten aus Wikidata gefunden.")
+def normalize_text(text):
+    """
+    Macht Antworten vergleichbarer:
+    - Kleinbuchstaben
+    - entfernt Akzente
+    - entfernt überflüssige Leerzeichen
+    """
+    text = str(text).strip().lower()
 
-    df = wikidata_df.merge(input_df, on="qid", how="left")
-
-    df["display_name"] = df.apply(
-        lambda row: (
-            row["name"]
-            if isinstance(row["name"], str) and row["name"].strip()
-            else row["wikidata_label"]
-            if isinstance(row["wikidata_label"], str) and row["wikidata_label"].strip()
-            else row["qid"]
-        ),
-        axis=1,
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(
+        char for char in text
+        if not unicodedata.combining(char)
     )
 
-    return df
+    text = " ".join(text.split())
+
+    return text
 
 
-@st.cache_resource(show_spinner="Lade Weltkarte...")
-def load_land_map():
-    world = compiler2.gpd.read_file(compiler2.WORLD_MAP_URL)
-    land = world.dissolve()
-    return land
+def choose_random_person():
+    df = st.session_state.df
 
+    if len(df) == 0:
+        return
 
-def choose_random_person(df):
-    index = random.randrange(len(df))
-    st.session_state.current_index = index
+    old_index = st.session_state.get("current_index")
+
+    possible_indices = list(range(len(df)))
+
+    if old_index is not None and len(possible_indices) > 1:
+        possible_indices.remove(old_index)
+
+    st.session_state.current_index = random.choice(possible_indices)
     st.session_state.show_solution = False
+    st.session_state.feedback = None
+    st.session_state.input_counter += 1
+
+
+def start_game():
+    st.session_state.game_started = True
+    choose_random_person()
 
 
 # ==================================================
-# Session State vorbereiten
+# Session State
 # ==================================================
+
+if "game_started" not in st.session_state:
+    st.session_state.game_started = False
 
 if "current_index" not in st.session_state:
     st.session_state.current_index = None
@@ -69,81 +82,117 @@ if "current_index" not in st.session_state:
 if "show_solution" not in st.session_state:
     st.session_state.show_solution = False
 
+if "feedback" not in st.session_state:
+    st.session_state.feedback = None
 
-# ==================================================
-# Daten vorbereiten
-# ==================================================
-
-df = load_game_data()
-land = load_land_map()
+if "input_counter" not in st.session_state:
+    st.session_state.input_counter = 0
 
 
 # ==================================================
-# Layout
+# Daten laden
 # ==================================================
 
-left, center, right = st.columns([1, 2, 1])
+try:
+    df = load_game_data()
+    st.session_state.df = df
 
-with center:
-    st.title("Geohistorisches Quiz")
+except Exception as error:
+    st.error("Die Spieldaten konnten nicht geladen werden.")
+    st.exception(error)
+    st.stop()
 
-    st.write(
-        "Errate die historische Figur anhand von Geburts- und Todesdaten."
-    )
 
-    with st.expander("Anleitung"):
+# ==================================================
+# Startmenü
+# ==================================================
+
+if not st.session_state.game_started:
+    left, center, right = st.columns([1, 2, 1])
+
+    with center:
+        st.title("Geohistorisches Quiz")
+
         st.write(
-            """
-            Mit Spielbeginn wird eine Karte angezeigt.  
-            Grün markiert den Geburtsort, rot markiert den Todesort.  
-            Neben den Punkten stehen die jeweiligen Jahre.  
-            
-            Ziel ist es, aus diesen Informationen die historische Figur zu erraten.
-            """
+            "Errate die historische Figur anhand von Geburts- und Todesdaten."
         )
 
-    col_start, col_new = st.columns(2)
+        with st.expander("Anleitung"):
+            st.write(
+                """
+                Mit Spielbeginn wird eine Karte angezeigt.
 
-    with col_start:
-        if st.button("Start", type="primary", use_container_width=True):
-            choose_random_person(df)
+                Grün markiert den Geburtsort.  
+                Rot markiert den Todesort.  
+                Neben den Punkten stehen die jeweiligen Jahre.
 
-    with col_new:
-        if st.button("Neue Person", use_container_width=True):
-            choose_random_person(df)
+                Ziel ist es, aus diesen Informationen die historische Figur zu erraten.
+                """
+            )
+
+        if st.button(
+            "Start",
+            type="primary",
+            use_container_width=True
+        ):
+            start_game()
+            st.rerun()
 
 
 # ==================================================
-# Spielanzeige
+# Quiz-Ansicht
 # ==================================================
 
-if st.session_state.current_index is not None:
+else:
+    st.title("Geohistorisches Quiz")
+
     row = df.iloc[st.session_state.current_index]
 
-    st.divider()
+    fig, person_name = compiler.draw_person_map_plotly(
+        row,
+        show_title=False
+    )
 
-    fig, person_name = compiler2.draw_person_map(land, row)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={
+            "scrollZoom": True,
+            "displayModeBar": True,
+        }
+    )
 
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
+    guess = st.text_input(
+        "Wer ist die gesuchte Person?",
+        key=f"guess_{st.session_state.input_counter}"
+    )
 
-    guess = st.text_input("Wer ist die gesuchte Person?")
-
-    col_check, col_solution = st.columns(2)
+    col_check, col_solution, col_next = st.columns(3)
 
     with col_check:
         if st.button("Antwort prüfen", use_container_width=True):
-            if guess.strip().lower() == person_name.strip().lower():
-                st.success("Richtig!")
+            user_answer = normalize_text(guess)
+            correct_answer = normalize_text(person_name)
+
+            if user_answer == correct_answer:
+                st.session_state.feedback = "correct"
             else:
-                st.error("Leider falsch.")
+                st.session_state.feedback = "wrong"
 
     with col_solution:
         if st.button("Lösung anzeigen", use_container_width=True):
             st.session_state.show_solution = True
 
+    with col_next:
+        if st.button("Neue Person", type="primary", use_container_width=True):
+            choose_random_person()
+            st.rerun()
+
+    if st.session_state.feedback == "correct":
+        st.success("Richtig!")
+
+    elif st.session_state.feedback == "wrong":
+        st.error("Leider falsch.")
+
     if st.session_state.show_solution:
         st.info(f"Die gesuchte Person ist: **{person_name}**")
-
-else:
-    st.info("Klicke auf **Start**, um das Quiz zu beginnen.")
