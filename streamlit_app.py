@@ -22,7 +22,7 @@ with center:
 
 
     clicked = st.button(
-        "🚀 Starten",
+        "Start",
         type="primary",
         width="stretch"
     )
