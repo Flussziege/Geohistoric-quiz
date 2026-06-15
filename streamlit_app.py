@@ -1,10 +1,15 @@
 import streamlit as st
+import pandas as pd
+import random
 
-import streamlit as st
+import compiler
+import personen.csv
 
 st.set_page_config(layout="wide")
 
 left, center, right = st.columns([1, 2, 1])
+
+person = None
 
 with center:
 
@@ -28,4 +33,18 @@ with center:
     )
 
 if clicked:
-    st.success("Button wurde geklickt!")
+    # Source - https://stackoverflow.com/a/43477355
+    # Posted by Open AI - Opting Out, modified by community. See post 'Timeline' for change history
+    # Retrieved 2026-06-15, License - CC BY-SA 3.0
+
+
+    df = pd.read_csv("datei.csv")
+
+    zeile = df.sample(n=1).iloc[0]
+
+    Name = zeile.iloc[0]
+    quid = zeile.iloc[1]
+    map_size = zeile.iloc[2]
+
+    fig = compiler.main(quid)
+
