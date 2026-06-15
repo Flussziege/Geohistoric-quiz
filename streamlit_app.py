@@ -6,13 +6,13 @@ st.set_page_config(layout="wide")
 
 left, center, right = st.columns([1, 2, 1])
 
-
-st.title("Geohistorisches Quiz")
-st.write(
-    "Errate die historische Figur anhand von Geburts und Todesdaten!"
-)
-
 with center:
+
+    st.title("Geohistorisches Quiz")
+    st.write(
+        "Errate die historische Figur anhand von Geburts und Todesdaten!"
+    )
+
     with st.expander("Anleitung"):
         st.write('''
             Mit Spielbeginn wird eine Karte angezeigt, auf der mit grün der Geburtsort und mit rot der Todesort einer
