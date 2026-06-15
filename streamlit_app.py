@@ -3,7 +3,7 @@ import pandas as pd
 import random
 
 import compiler
-import personen.csv
+
 
 st.set_page_config(layout="wide")
 
