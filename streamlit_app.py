@@ -1,11 +1,5 @@
 import streamlit as st
 
-[theme]
-primaryColor = "#6C63FF"
-backgroundColor = "#0E1117"
-secondaryBackgroundColor = "#1A1D27"
-textColor = "#FAFAFA"
-font = "sans serif"
 
 st.title("Geohistorisches Quiz")
 st.write(
