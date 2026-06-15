@@ -12,3 +12,7 @@ with st.expander("Anleitung"):
              historischen Figur markiert ist. Zusätzlich sind die entsprechenden Jahre angegeben.
         Ziel ist es aus diesen Informationen soll die Figur korrekt erraten werden.
     ''')
+
+st.button(
+    label= "Start",
+)
