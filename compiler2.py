@@ -416,31 +416,45 @@ def draw_person_map_plotly(row, show_title=False):
             )
         )
 
-    # Tod = rot
+    # Tod = rotes Textsymbol, kein Marker
     if pd.notna(row["death_lat"]) and pd.notna(row["death_lon"]):
         death_text = ""
+
         if pd.notna(row["death_year"]):
             death_text = str(int(row["death_year"]))
 
+        # Todeszeichen als Text, nicht als Marker
         fig.add_trace(
             go.Scattergeo(
                 lon=[row["death_lon"]],
                 lat=[row["death_lat"]],
-                mode="markers+text",
-                marker=dict(
-                    size=13,
+                mode="text",
+                text=["✕"],
+                textposition="middle center",
+                textfont=dict(
+                    size=34,
                     color="red",
-                    symbol="x",
-                    line=dict(width=3),
+                    family="Arial Black, Arial, sans-serif",
                 ),
+                name="Tod",
+                hoverinfo="skip",
+            )
+        )
+
+        # Todesjahr daneben
+        fig.add_trace(
+            go.Scattergeo(
+                lon=[row["death_lon"]],
+                lat=[row["death_lat"]],
+                mode="text",
                 text=[death_text],
                 textposition="bottom right",
                 textfont=dict(
                     size=18,
                     color="red",
-                    family="Arial Black",
+                    family="Arial Black, Arial, sans-serif",
                 ),
-                name="Tod",
+                name="Todesjahr",
                 hoverinfo="skip",
             )
         )
