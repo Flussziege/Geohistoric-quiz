@@ -459,8 +459,14 @@ def draw_person_map_plotly(row, show_title=False):
 
     fig.update_geos(
         projection_type="mercator",
-        lonaxis_range=[xmin, xmax],
-        lataxis_range=[ymin, ymax],
+        lonaxis=dict(
+            range=[xmin, xmax],
+            showgrid=False
+        ),
+        lataxis=dict(
+            range=[ymin, ymax],
+            showgrid=False
+        ),
         showland=True,
         landcolor="whitesmoke",
         showocean=True,
@@ -470,7 +476,6 @@ def draw_person_map_plotly(row, show_title=False):
         coastlinecolor="black",
         coastlinewidth=1,
         showframe=False,
-        showgrid=False,
         bgcolor="white",
     )
 
