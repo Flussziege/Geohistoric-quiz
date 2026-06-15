@@ -1,4 +1,5 @@
 import re
+import time
 from pathlib import Path
 
 import requests
@@ -12,8 +13,6 @@ import matplotlib.pyplot as plt
 # ==================================================
 
 INPUT_FILE = Path("personen.csv")
-OUTPUT_DIR = Path("svg_karten")
-OUTPUT_DIR.mkdir(exist_ok=True)
 
 DEFAULT_MAP_VIEW = "world"
 
@@ -32,9 +31,6 @@ WORLD_MAP_URL = (
 # ==================================================
 
 def slugify(text):
-    """
-    Macht aus einem Personennamen einen sicheren Dateinamen.
-    """
     text = str(text).strip().lower()
     text = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
     text = text.replace("ß", "ss")
@@ -43,7 +39,14 @@ def slugify(text):
     return text.strip("_")
 
 
-def load_input_file(path):
+def load_input_file(path=INPUT_FILE):
+    """
+    Lädt personen.csv.
+    Erwartete Spalten:
+    qid,name,map_view
+
+    map_view ist optional.
+    """
     if not path.exists():
         raise FileNotFoundError(
             f"Input-Datei nicht gefunden: {path}\n"
@@ -81,15 +84,44 @@ def load_input_file(path):
 
     return df
 
+
+def get_map_bounds(view):
+    """
+    Gibt Kartenausschnitt zurück:
+    xmin, xmax, ymin, ymax
+    """
+    bounds = {
+        "world": (-180, 180, -60, 85),
+        "europe": (-12, 35, 34, 72),
+        "central_europe": (3, 23, 45, 56.5),
+        "germany": (5, 16, 47, 55.5),
+    }
+
+    if view not in bounds:
+        raise ValueError(
+            f"Unbekannter map_view: {view}. "
+            "Erlaubt sind: world, europe, central_europe, germany"
+        )
+
+    return bounds[view]
+
+
+# ==================================================
+# Wikidata
+# ==================================================
+
 def query_wikidata(qids):
     """
     Holt Geburtsjahr, Todesjahr, Geburtsort, Todesort
     sowie Koordinaten der Orte aus Wikidata.
-
-    Diese Version vermeidet geof:latitude/geof:longitude
-    und nutzt stattdessen wikibase:geoLatitude / wikibase:geoLongitude.
     """
-    import time
+    if isinstance(qids, str):
+        qids = [qids]
+
+    qids = [str(qid).strip() for qid in qids if str(qid).strip()]
+
+    if not qids:
+        return pd.DataFrame()
 
     values_block = " ".join(f"wd:{qid}" for qid in qids)
 
@@ -201,8 +233,6 @@ def query_wikidata(qids):
     for col in ["birth_year", "death_year"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
-    # Falls Wikidata mehrere Koordinaten oder mehrere Aussagen liefert,
-    # nehmen wir pro Person den ersten Treffer.
     df = (
         df.sort_values(["qid"])
         .groupby("qid", as_index=False)
@@ -211,23 +241,58 @@ def query_wikidata(qids):
 
     return df
 
-def get_map_bounds(view):
-    bounds = {
-        "world": (-180, 180, -60, 85),
-        "europe": (-12, 35, 34, 72),
-        "central_europe": (3, 23, 45, 56.5),
-        "germany": (5, 16, 47, 55.5),
-    }
 
-    if view not in bounds:
-        raise ValueError(
-            f"Unbekannter map_view: {view}. "
-            "Erlaubt sind: world, europe, central_europe, germany"
-        )
+# ==================================================
+# Daten für das Spiel vorbereiten
+# ==================================================
 
-    return bounds[view]
+def prepare_game_data():
+    """
+    Lädt CSV, Wikidata-Daten und verbindet beides.
+    """
+    input_df = load_input_file(INPUT_FILE)
 
-def draw_person_map(land, row, name):
+    qids = input_df["qid"].tolist()
+    wikidata_df = query_wikidata(qids)
+
+    if wikidata_df.empty:
+        raise ValueError("Keine Daten aus Wikidata gefunden.")
+
+    df = wikidata_df.merge(input_df, on="qid", how="left")
+
+    df["display_name"] = df.apply(
+        lambda row: (
+            row["name"]
+            if isinstance(row["name"], str) and row["name"].strip()
+            else row["wikidata_label"]
+            if isinstance(row["wikidata_label"], str) and row["wikidata_label"].strip()
+            else row["qid"]
+        ),
+        axis=1,
+    )
+
+    return df
+
+
+def load_land_map():
+    """
+    Lädt die Weltkarte und entfernt Ländergrenzen.
+    """
+    world = gpd.read_file(WORLD_MAP_URL)
+    land = world.dissolve()
+    return land
+
+
+# ==================================================
+# Karte für einzelne Person zeichnen
+# ==================================================
+
+def draw_person_map(land, row):
+    """
+    Erstellt eine Matplotlib-Figur für genau eine Person.
+    Gibt zurück:
+    fig, person_name
+    """
     map_view = row["map_view"]
 
     fig, ax = plt.subplots(figsize=(14, 9))
@@ -249,7 +314,13 @@ def draw_person_map(land, row, name):
     label_dy = (ymax - ymin) * 0.025
 
     person_name = row["display_name"]
-    ax.set_title(name, fontsize=18, fontweight="bold", pad=20)
+
+    ax.set_title(
+        person_name,
+        fontsize=18,
+        fontweight="bold",
+        pad=20
+    )
 
     # Geburt = grün
     if pd.notna(row["birth_lat"]) and pd.notna(row["birth_lon"]):
@@ -308,8 +379,4 @@ def draw_person_map(land, row, name):
                 ),
             )
 
-
-    #plt.savefig(outpath, format="svg", bbox_inches="tight")
-    plt.close(fig)
-
-    return fig
+    return fig, person_name
