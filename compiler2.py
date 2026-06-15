@@ -315,13 +315,6 @@ def draw_person_map(land, row):
 
     person_name = row["display_name"]
 
-    ax.set_title(
-        person_name,
-        fontsize=18,
-        fontweight="bold",
-        pad=20
-    )
-
     # Geburt = grün
     if pd.notna(row["birth_lat"]) and pd.notna(row["birth_lon"]):
         ax.scatter(
