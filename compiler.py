@@ -227,7 +227,7 @@ def get_map_bounds(view):
 
     return bounds[view]
 
-def draw_person_map(land, row, output_dir, name):
+def draw_person_map(land, row, name):
     map_view = row["map_view"]
 
     fig, ax = plt.subplots(figsize=(14, 9))
@@ -308,8 +308,6 @@ def draw_person_map(land, row, output_dir, name):
                 ),
             )
 
-    filename = f"{slugify(person_name)}_{row['qid']}_{map_view}.svg"
-    outpath = output_dir / filename
 
     #plt.savefig(outpath, format="svg", bbox_inches="tight")
     plt.close(fig)
