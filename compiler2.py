@@ -432,7 +432,7 @@ def draw_person_map_plotly(row, show_title=False):
                 text=["✕"],
                 textposition="middle center",
                 textfont=dict(
-                    size=34,
+                    size=23,
                     color="red",
                     family="Arial Black, Arial, sans-serif",
                 ),
