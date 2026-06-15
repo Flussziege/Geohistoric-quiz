@@ -19,12 +19,9 @@ with st.expander("Anleitung"):
         Ziel ist es aus diesen Informationen soll die Figur korrekt erraten werden.
     ''')
 
-with center:
+
     clicked = st.button(
-        "🚀 Starten",
+        "Start",
         type="primary",
         width="stretch"
     )
-
-if clicked:
-    st.success("Button wurde geklickt!")
