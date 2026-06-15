@@ -3,7 +3,7 @@ import unicodedata
 
 import streamlit as st
 
-import compiler
+import compiler2 as compiler
 
 
 # ==================================================
