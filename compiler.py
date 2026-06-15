@@ -311,7 +311,7 @@ def draw_person_map(land, row, output_dir, name):
     filename = f"{slugify(person_name)}_{row['qid']}_{map_view}.svg"
     outpath = output_dir / filename
 
-    plt.savefig(outpath, format="svg", bbox_inches="tight")
+    #plt.savefig(outpath, format="svg", bbox_inches="tight")
     plt.close(fig)
 
     return outpath
