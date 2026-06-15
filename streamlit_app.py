@@ -1,5 +1,11 @@
 import streamlit as st
 
+import streamlit as st
+
+st.set_page_config(layout="wide")
+
+left, center, right = st.columns([1, 2, 1])
+
 
 st.title("Geohistorisches Quiz")
 st.write(
@@ -13,6 +19,12 @@ with st.expander("Anleitung"):
         Ziel ist es aus diesen Informationen soll die Figur korrekt erraten werden.
     ''')
 
-st.button(
-    label= "Start",
-)
+with center:
+    clicked = st.button(
+        "🚀 Starten",
+        type="primary",
+        width="stretch"
+    )
+
+if clicked:
+    st.success("Button wurde geklickt!")
