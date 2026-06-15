@@ -46,5 +46,5 @@ if clicked:
     quid = zeile.iloc[1]
     map_size = zeile.iloc[2]
 
-    fig = compiler.draw_person_map(quid)
+    fig = compiler.draw_person_map(map_size, quid, Name)
 
