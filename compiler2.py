@@ -430,7 +430,7 @@ def draw_person_map_plotly(row, show_title=False):
                 marker=dict(
                     size=16,
                     color="red",
-                    symbol="x",
+                    symbol="cross",
                     line=dict(width=3),
                 ),
                 text=[death_text],

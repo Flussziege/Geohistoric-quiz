@@ -7,7 +7,7 @@ import compiler2 as compiler
 
 
 # ==================================================
-# Einstellungen
+# Streamlit Einstellungen
 # ==================================================
 
 st.set_page_config(
@@ -29,8 +29,8 @@ def normalize_text(text):
     """
     Macht Antworten vergleichbarer:
     - Kleinbuchstaben
-    - entfernt Akzente
-    - entfernt überflüssige Leerzeichen
+    - Akzente entfernen
+    - überflüssige Leerzeichen entfernen
     """
     text = str(text).strip().lower()
 
@@ -46,6 +46,10 @@ def normalize_text(text):
 
 
 def choose_random_person():
+    """
+    Wählt eine neue zufällige Person.
+    Verhindert möglichst, dass dieselbe Person zweimal direkt nacheinander kommt.
+    """
     df = st.session_state.df
 
     if len(df) == 0:
@@ -61,12 +65,28 @@ def choose_random_person():
     st.session_state.current_index = random.choice(possible_indices)
     st.session_state.show_solution = False
     st.session_state.feedback = None
+
+    # sorgt dafür, dass das Antwortfeld bei neuer Person geleert wird
     st.session_state.input_counter += 1
 
 
 def start_game():
     st.session_state.game_started = True
     choose_random_person()
+
+
+def check_answer(guess, correct_name):
+    if not guess:
+        st.session_state.feedback = "empty"
+        return
+
+    user_answer = normalize_text(guess)
+    correct_answer = normalize_text(correct_name)
+
+    if user_answer == correct_answer:
+        st.session_state.feedback = "correct"
+    else:
+        st.session_state.feedback = "wrong"
 
 
 # ==================================================
@@ -140,7 +160,7 @@ if not st.session_state.game_started:
 
 
 # ==================================================
-# Quiz-Ansicht
+# Quiz Ansicht
 # ==================================================
 
 else:
@@ -159,36 +179,49 @@ else:
         config={
             "scrollZoom": True,
             "displayModeBar": True,
+            "displaylogo": False,
         }
     )
 
-    guess = st.text_input(
+    all_names = sorted(df["display_name"].dropna().unique())
+
+    guess = st.selectbox(
         "Wer ist die gesuchte Person?",
+        options=all_names,
+        index=None,
+        placeholder="Namen eingeben oder auswählen...",
         key=f"guess_{st.session_state.input_counter}"
     )
 
     col_check, col_solution, col_next = st.columns(3)
 
     with col_check:
-        if st.button("Antwort prüfen", use_container_width=True):
-            user_answer = normalize_text(guess)
-            correct_answer = normalize_text(person_name)
-
-            if user_answer == correct_answer:
-                st.session_state.feedback = "correct"
-            else:
-                st.session_state.feedback = "wrong"
+        if st.button(
+            "Antwort prüfen",
+            use_container_width=True
+        ):
+            check_answer(guess, person_name)
 
     with col_solution:
-        if st.button("Lösung anzeigen", use_container_width=True):
+        if st.button(
+            "Lösung anzeigen",
+            use_container_width=True
+        ):
             st.session_state.show_solution = True
 
     with col_next:
-        if st.button("Neue Person", type="primary", use_container_width=True):
+        if st.button(
+            "Neue Person",
+            type="primary",
+            use_container_width=True
+        ):
             choose_random_person()
             st.rerun()
 
-    if st.session_state.feedback == "correct":
+    if st.session_state.feedback == "empty":
+        st.warning("Bitte gib zuerst einen Namen ein oder wähle einen aus.")
+
+    elif st.session_state.feedback == "correct":
         st.success("Richtig!")
 
     elif st.session_state.feedback == "wrong":

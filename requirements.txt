@@ -4,3 +4,4 @@ requests
 matplotlib
 geopandas
 plotly
+shapely
