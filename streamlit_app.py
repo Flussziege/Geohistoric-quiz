@@ -3,7 +3,7 @@ import random
 import streamlit as st
 import matplotlib.pyplot as plt
 
-import compiler
+import compiler2
 
 
 # ==================================================
@@ -22,10 +22,10 @@ st.set_page_config(
 
 @st.cache_data(show_spinner="Lade Wikidata-Daten...")
 def load_game_data():
-    input_df = compiler.load_input_file(compiler.INPUT_FILE)
+    input_df = compiler2.load_input_file(compiler2.INPUT_FILE)
 
     qids = input_df["qid"].tolist()
-    wikidata_df = compiler.query_wikidata(qids)
+    wikidata_df = compiler2.query_wikidata(qids)
 
     if wikidata_df.empty:
         raise ValueError("Keine Daten aus Wikidata gefunden.")
@@ -48,7 +48,7 @@ def load_game_data():
 
 @st.cache_resource(show_spinner="Lade Weltkarte...")
 def load_land_map():
-    world = compiler.gpd.read_file(compiler.WORLD_MAP_URL)
+    world = compiler2.gpd.read_file(compiler2.WORLD_MAP_URL)
     land = world.dissolve()
     return land
 
@@ -122,7 +122,7 @@ if st.session_state.current_index is not None:
 
     st.divider()
 
-    fig, person_name = compiler.draw_person_map(land, row)
+    fig, person_name = compiler2.draw_person_map(land, row)
 
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
