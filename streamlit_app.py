@@ -38,7 +38,7 @@ if clicked:
     # Retrieved 2026-06-15, License - CC BY-SA 3.0
 
 
-    df = pd.read_csv("datei.csv")
+    df = pd.read_csv("personen.csv")
 
     zeile = df.sample(n=1).iloc[0]
 
